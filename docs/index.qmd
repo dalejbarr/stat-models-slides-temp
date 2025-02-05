@@ -1,0 +1,12 @@
+---
+title: "Psych 4037 Statistical Models Lecture Slides"
+format: html
+---
+
+```{r}
+#| echo: false
+subdirs <- dir(".", "[0-9]{2}_.*")
+data.frame(link = sprintf("[%s](%s/index.html)",
+                          subdirs, subdirs)) |>
+  knitr::kable()
+```
