@@ -1,0 +1,243 @@
+---
+title: "Stat Models (06): Multivariate analysis"
+author: "Dale Barr"
+institute: University of Glasgow
+title-slide-attributes:
+  data-background-image: "img/titlescreen.png"
+format: 
+  revealjs:
+    theme: dark 
+    code-line-numbers: false
+    chalkboard: true
+    df-print: tibble
+knitr:
+  opts_chunk:
+    echo: true
+---
+
+```{r}
+#| label: setup
+#| include: false
+options(tidyverse.quiet=TRUE)
+library("tidyverse")
+library("lme4")
+
+source("../theme_jetblack.R")
+```
+
+## part II
+
+| lecture | topic                                 |
+|---------|---------------------------------------|
+| 6       | introduction to multivariate analysis |
+| 7       | path analysis                         |
+| 8       | mediation models                      |
+| 9       | confirmatory factor analysis          |
+| 10      | structural equation modeling          |
+
+# multivariate analysis
+
+- more than one response variable (or DV)
+- focus on causal relationships / patterns of associations between variables
+- modeling framework: Structural Equation Models (SEM)
+  - [structural model]{style="color:yellow;"}: path / mediation analysis
+  - [measurement model]{style="color:yellow;"}: CFA, full SEM
+
+## the SEM framework
+
+- brings together regression & psychometrics
+  - making it possible to take measurement error/ reliability into account
+- allows for estimation of indirect and direct (causal) effects
+
+## Also Known As (AKA)
+
+- covariance structure analysis/modeling
+- Analysis of Moment Structures (AMOS)
+- Linear Structural Relations (LISREL)
+
+**other families of SEM:**
+
+- variance-based SEM / partial least squares path Modeling (PLS-PM), common in marketing/organizational research
+- structural causal model (SCM) or nonparametric SEM
+  - directed graphs (DAG / DCG)
+
+## what SEM does
+
+- analyst specifies a model based on domain knowledge
+- estimate model parameters to minimize the difference between:
+  - sample covariance matrix (observed)
+  - covariance matrix implied by the model
+
+
+::: {.aside}
+can estimate means too, but usually focus is on covariances
+:::
+
+
+## history of SEM {.smaller}
+
+- Sewell Wright (geneticist) method of path coefficients (1934)
+- introduced to social sciences by Blalock (1961) and others
+- led to integration of regression with factor-analytic techniques (JWK model) Karl Jöreskog, J. W. Keesling, D. Wiley
+- first publicly available computer program was LISREL III by Jöreskog & Sörbom (1976)
+
+:::: {.columns}
+
+::: {.column width=30%}
+![](img/sewall-wright_1957.jpg){fig-align="center" width="50%"}
+:::
+
+::: {.column width=30%}
+![](img/blalock_1961.png)
+
+Blalock (1961)
+:::
+
+::: {.column width=30%}
+![](img/lisrel.jpg){fig-align="center"}
+:::
+
+:::: 
+
+::: {.aside}
+Klein (2023), [Principles and Practice of Structural Equation Modeling](https://www.guilford.com/books/Principles-and-Practice-of-Structural-Equation-Modeling/Rex-Kline/9781462551910), 5th Ed. New York: The Guilford Press.
+:::
+
+## where SEM is mostly used {.smaller}
+
+- industrial/organisational psychology
+- marketing
+- educational psychology
+- health sciences
+- psychological assessment
+- neuropsychology
+- political sciences
+- economics
+
+::: {.aside}
+
+mostly observational / nonexperimental studies, but also, experimental / quasi-experimental studies [(Breitsohl, 2019)](https://doi.org/10.1177/1094428118754988)
+
+:::
+
+## disadvantages / challenges {.smaller}
+
+- NOT a tool for causal discovery
+- it is a "large-sample technique"
+  - [N:q rule]{style="color:yellow;"}, ratio of number of cases (N) to number of model parameters needing estimates (q). 20:1 is recommended [(Jackson 2003)](https://doi.org/10.1207/S15328007SEM1001_6)
+  - most published SEM studies are probably based on samples that are too small [(Loehlin & Beaujean, 2017)](https://doi.org/10.4324/9781315643199)
+  - most do not adequately report:
+    - rationale for SEM, for sample size, missing data, reliability of variables, correspondence between model & data [(Zhang et al. 2021)](https://doi.org/10.1111/1467-8551.12415)
+- assumes linearity / multivariate normality
+
+## software
+
+- open-source
+  - R: `lavaan`, `semTools`, `OpenMx`
+  - JASP
+- commercial
+  - Amos, LISREL, Mplus
+
+## path diagrams {.smaller}
+
+![](img/collective-effervescence.jpg){fig-align="center" width="70%"}
+
+::: {.aside}
+Koefler et al. (2024), [Let the music play: Live music fosters collective effervescence and leads to lasting positive outcomes](https://doi.org/10.1177/01461672241288027). *Personality and Social Psychology Bulletin*.
+:::
+
+::: {.notes}
+
+mention: exogenous vs. endogenous
+
+CE ~ immersed + parasocial + friends
+CHAE ~ CE + immersed + parasocial
+MIL ~ CE + parasocial
+
+:::
+
+
+## model diagram syntax
+
+![](img/path-diagram-syntax.png){fig-align="center" width="60%"}
+
+::: {.aside}
+"McArdle-McDonald RAM syntax"
+:::
+
+## a simple regression model
+
+
+# manifest vs latent
+
+in the social sciences, we often can only measure 'proxies' for the true theoretical constructs that we are interested in (e.g., happiness, job satisfaction, self-esteem, statistics anxiety, social capital)
+
+## importance of reliability
+
+- [incremental validity]{style="color:yellow;"}: does a predictor have an effect on some response *after controlling for a second predictor?*
+- multiple regression assumes perfect score reliability!
+
+Type I error rates of significance tests are surprisingly high even in large samples (N = 300) with moderate levels of predictor reliability (.8) in analyses with 2 predictors
+
+"incremental validity" better supported by SEM
+
+::: {.aside}
+Westfall & Yarkoni (2016), [Statistically Controlling for Confounding Constructs Is Harder than You Think](https://doi.org/10.1371/journal.pone.0152719).
+:::
+
+## ice cream & swimming deaths
+
+## SEM analysis workflow {.smaller}
+
+1. specify the model
+2. evaluate whether the model is identified
+3. select measures (operationalize) and collect data
+4. analyze the model
+   - if fit is poor, respecify (step 5) if justified by theory; if not, retain no model
+   - if model retained, interpret parameter estimates
+   - consider equivalent / near-equivalent models
+5. respecify
+6. report the results
+
+::: {.aside}
+
+Klein (2023), [Principles and Practice of Structural Equation Modeling](https://www.guilford.com/books/Principles-and-Practice-of-Structural-Equation-Modeling/Rex-Kline/9781462551910), 5th Ed. New York: The Guilford Press.
+
+:::
+
+## model specification
+
+represent your hypotheses as equations or (more commonly) as a path diagram
+
+- [endogenous variable]{style="color:yellow;"}: one or more causal paths leading into it
+- [intervening variable]{style="color:yellow;"}: one or more causal path leading in and one or more leading out
+- [exogenous variable]{style="color:yellow;"}: one or more causal path leading out, none leading in
+
+**guided by domain knowledge, not by the analysis!**
+
+## model identification {.smaller}
+
+- analyzing a SEM requires deriving estimates for parameters in a set of *simultaneous equations*
+- a parameter is 'identified' if a unique value can be found given the model and the data matrix
+
+| Term                                                                           | Description                         |
+|--------------------------------------------------------------------------------|-------------------------------------|
+| [under-identified]{style="color:yellow;"}                                      | at least one unidentified parameter |
+| [just-identified]{style="color:yellow;"} or [saturated]{style="color:yellow;"} | data complexity = model complexity  |
+| [over-identified]{style="color:yellow;"}                                       | model simpler than data             |
+
+::: {.notes}
+
+a model is
+- under-identified: contains at least one unidentified param (model too simple for the data)
+- just-identified or saturated (model 'just right' for the data); usually scientifically vapid
+- over-identified (model simpler than the data; can be disconfirmed)
+
+example:
+- fitting a line to a single point
+- fitting a line to two points
+- fitting a line to 10 points
+
+identification should be done /before/ collecting any data; it is a function of the number of measures (variables) and the structure of the model, NOT the sample size!
+
+:::
