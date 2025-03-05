@@ -1,0 +1,17 @@
+{
+  "hash": "cf53d1b73876076d0864cb5534f706e6",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Psych 4037 Statistical Models Lecture Slides\"\nformat: html\n---\n\n::: {.cell}\n::: {.cell-output-display}\n\n\n|link            |\n|:---------------|\n|[01_introduction](01_introduction/index.html)|\n|[02_corr-and-reg](02_corr-and-reg/index.html)|\n|[03_multiple-reg](03_multiple-reg/index.html)|\n|[04_interactions](04_interactions/index.html)|\n|[05_lmems](05_lmems/index.html)|\n|[06_multivariate](06_multivariate/index.html)|\n|[07_path](07_path/index.html)|\n\n\n:::\n:::\n",
+    "supporting": [
+      "index_files"
+    ],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
