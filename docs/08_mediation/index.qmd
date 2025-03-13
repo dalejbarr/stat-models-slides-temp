@@ -1,0 +1,168 @@
+---
+title: "Stat Models (08): Mediation analysis"
+author: "Dale Barr"
+institute: University of Glasgow
+title-slide-attributes:
+  data-background-image: "img/titlescreen.png"
+format: 
+  revealjs:
+    theme: dark 
+    code-line-numbers: false
+    chalkboard: true
+    df-print: tibble
+knitr:
+  opts_chunk:
+    echo: true
+---
+
+```{r}
+#| label: setup
+#| include: false
+options(tidyverse.quiet=TRUE)
+source("../theme_jetblack.R")
+```
+
+## part II
+
+| lecture | topic                                     |
+|---------|-------------------------------------------|
+| 6       | introduction to multivariate analysis     |
+| 7       | path analysis                             |
+| 8       | [mediation models]{style="color:yellow;"} |
+| 9       | confirmatory factor analysis              |
+| 10      | structural equation modeling              |
+
+## what is mediation?
+
+> "strict causal hypothesis... about the way in which... one variable causes *changes* in another variable, which in turn causes *changes* in an outcome variable" (Little, 2013, p. 287)
+
+::: {.aside}
+Little, T. D. (2013). *Longitudinal structural equation modeling.* Guilford Press.
+
+**NB** mediation is not a method for 'causal discovery'!
+:::
+
+## example
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+```{r}
+#| include: false
+options(tidyverse.quiet=TRUE)
+library("tidyverse")
+library("lavaan")
+
+wpdat <- read_csv("https://psyteachr.github.io/stat-models-v2/data/workplace.csv",
+                  col_types = "ddd")
+```
+
+```{r}
+#| echo: false
+wpdat
+```
+:::
+
+::: {.column width="70%"}
+- `IP`: prop in-person working (0 - 1)
+- `OI`: organizational intelligence (1 - 100)
+- `PR`: productivity (1 - 100)
+
+each row is data from a single firm
+:::
+
+::::
+
+::: {.aside}
+
+See [online workbook](https://psyteachr.github.io/stat-models-v2/mediation.html) for data and code for this example. **NB**: this is *simulated* (not real) data
+
+:::
+
+## relationship between IP and PR? {.smaller}
+
+```{r}
+#| echo: false
+mod_unmediated <- lm(PR ~ IP, data = wpdat)
+summary(mod_unmediated)
+```
+
+## the theory
+
+![](img/mediation.png){fig-align="center"}
+
+::: {.aside}
+reminder: made up example with simulated data, not based on any domain knowledge
+:::
+
+## direct, indirect, and total effects
+
+- **direct effect**: effect of $X$ on $Y$ *controlling for the mediation*
+- **indirect effect**: the *product* of path coefficients $a$ and $b$
+- **total effect**: the sum of the indirect effect and direct effects
+
+![](img/mediation.png){fig-align="center"}
+
+## model estimation
+
+![](img/mediation_paths.png){fig-align="center"}
+
+## significance of indirect effect?
+
+- label regression coefficients in `lavaan`
+- use `:=` ("is defined as") to compute and label effects
+- use *bootstrapping* for standard errors
+  - because Sobel statistic (test statistic / SE) assumes normality, likely to be violated for product estimator
+
+our results:
+
+$\beta = 16.032$, $SE = 2.153$, $z = 7.445$, $p < .001$
+
+## partial vs complete mediation
+
+- did the direct effect 'survive' the mediation? (No)
+
+direct effect: $\beta = 0.162$, $SE = 2.922$, $z = 0.055$, $p = 0.956$
+
+- what proportion of the total effect is explained by the mediation?
+
+our results suggest that 99% of the total effect is accounted for by the indirect effect
+
+## mediation analysis: assumptions
+
+- in addition to the standard path model assumptions:
+  - *temporal precedence*: changes precede their effects by a finite amount of time
+  - *modularity*: parts are potentially isolatable
+  - all directions of causal effects are correct
+  - no unmeasured confounders for any pair of variables
+  - mediator variable must be continuous (though other approaches exist: see g-computation by Muthen)
+
+::: {.aside}
+if assumptions not met, parameter estimates may not be meaningful
+:::
+
+## mediation in cross-sectional designs? {.smaller}
+
+Hyman-Tate criterion: there must be at least a *conceptual* time-ordering if study is cross-sectional
+
+1. does the cause conceptually exist before the mediator?
+2. does the mediator conceptually exist before the outcome?
+
+This means that:
+
+- trait variables (cognitive ability or chronic anxiety) cannot mediate between cause and outcome, because they are not changeable
+- group-level characteristics (norms, stereotypes) cannot be mediators because they are constants applying over all people in particular groups
+
+## spurious mediation
+
+mediator merely correlated with another unmeasured variable that is the actual mediator, or mediator is actually a consequence of the outcome
+
+## formative assignment {.smaller}
+
+![](img/collective-effervescence_diagram.jpg){fig-align="center" width=70%}
+
+::: {.aside}
+Koefler et al. (2024), [Let the music play: Live music fosters collective effervescence and leads to lasting positive outcomes](https://doi.org/10.1177/01461672241288027). *Personality and Social Psychology Bulletin*.
+:::
+
