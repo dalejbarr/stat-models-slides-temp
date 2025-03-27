@@ -1,0 +1,159 @@
+---
+title: "just for practice"
+output: html_document
+---
+
+<!--
+A tip: you will find it much easier to read the tasks you have to
+complete if you knit this file to HTML.
+
+The `setup` code chunk below has code to set up the assignment. 
+
+MAKE SURE YOU RUN THE SETUP CHUNK BEFORE YOU START, BUT PLEASE DO NOT
+EDIT IT!
+
+Skip ahead to your first task, which starts after the `setup`
+chunk. After you finish, but before you submit your Rmd file, please
+make sure you can successfully knit the file to HTML. It is also a
+good idea to make sure that your code passes all the tests in the
+Validation section at the end.
+-->
+
+```{r setup, include = FALSE}
+## RUN THIS CHUNK FIRST, BUT DO NOT EDIT OR ALTER ANYTHING HERE.
+.seed_global <- 999999
+
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+## Task 1
+
+What is the value of 1 + 1? Enter a numeric value as your answer.
+
+```{r task-1}
+one_plus_one <- NULL
+```
+
+## Task 2
+
+Are you ready for tomorrow's exam?
+
+Select **one or more answers** and store their value(s)—e.g., `c("a", "b", "c", "d")`—in the vector variable named `mc_exam`.
+
+a) ABSOLUTELY!
+b) Sure, why not?
+c) Bring it on!
+d) What is SEM?
+
+```{r task-2}
+mc_exam <- NULL
+```
+
+## Task 3
+
+Do you know how to type a lavaan model formula? Type any arbitrary legal formula into `mod_form` below.
+
+```{r}
+mod_form <- '
+## your model formula here
+'
+```
+
+## Task 4
+
+Can you see an image below when you knit? If so, then you've downloaded and named everything correctly.
+If not, check that the downloaded image is in the same directory as this stub file and has the name `img1.jpg`.
+
+![](img1.jpg)
+
+## Task 5
+
+Do you see data being printed out when you knit? If not make sure the data is in the same directory and the file is named `my-data.csv`.
+
+```{r}
+dat <- readr::read_csv("my-data.csv")
+
+print(dat)
+```
+
+# Validation
+
+You've completed the task! You do not need to change anything in this file beyond this point.
+
+To make sure you've provided valid answers to all of the questions, knit your Rmd file and look at the compiled HTML document. Make sure your answer pass all of the tests below. (IF NOT, DO NOT CHANGE ANY THE CODE BELOW; FIX YOUR ANSWER!)
+
+```{r val-pre, include = FALSE}
+.y <- function() "<span style=\"color:green\">yes</span>"
+.n <- function() "<span style=\"color:red\">**NO**</span>"
+
+.ce <- function(x) {
+  ex <- sapply(x, exists)
+  if (any(!ex)) {
+    allnames <- paste0("`", names(ex)[!ex], "`")
+    str <- paste0(paste(allnames, collapse = ","), "not found; check spelling and capitalization")
+    paste0("<span style=\"color:red\">", str, "</span>")
+  } else .y()
+}
+
+.cc <- function(var, class) {
+  .var <- deparse(substitute(var))
+  result <- .n()
+  if (exists(.var)) {
+    if (inherits(var, class)) {
+      result <- .y()
+    }
+  }
+  result
+}
+
+.cm <- function(var, vals=letters[1:4], tolower = TRUE) {
+  .var <- deparse(substitute(var))
+  result <- .n()
+  if (exists(.var)) {
+    if (is.vector(var)) {
+      if (length(var) > 0L) {
+        if (inherits(var, "character")) {
+          var <- if (tolower) {
+                   tolower(var)
+                 } else {
+                   var
+                 }
+          if (length(setdiff(var, vals)) == 0L) {
+            result <- .y()
+          }
+        }
+      }
+    }
+  }
+  result
+}
+
+.csec <- function(var) {
+  result <- if (inherits(var, "character") && (length(var) == 1L)) {
+              .y()
+            } else {
+              .n()
+            }
+  
+  result
+}
+
+.allvars <- c("one_plus_one", "mc_exam", "mod_form")
+```
+
+**Have all relevant variables been defined?** `r .ce(.allvars)`
+
+```{r validation-tests, results='asis', echo=FALSE}
+## DO NOT EDIT THIS CHUNK
+
+res <-
+  tibble::tribble(
+            ~Task, ~Test, ~Result,
+            "1", "Variable `one_plus_one` is of type `numeric`",
+            .cc(one_plus_one, "numeric"),
+            "2", "The variable `mc_exam` is an appropriately specified character vector",
+            .cm(mc_exam, c("a", "b", "c", "d")),
+            "3", "Variable `mod_form` is a character string", .csec(mod_form))
+
+knitr::kable(res)
+```
