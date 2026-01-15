@@ -1,0 +1,554 @@
+---
+title: "Statistical Models"
+subtitle: "Lecture 1 - Introduction"
+author: 
+  - name: "Phil McAleer"
+    email: "philip.mcaleer@glasgow.ac.uk"
+    affiliation: "University of Glasgow"
+format: 
+  revealjs:
+    theme: default 
+    code-line-numbers: false
+    chalkboard: true
+    mermaid: 
+      theme: default
+knitr:
+  opts_chunk:
+    echo: true
+---
+
+```{r}
+#| label: setup
+#| include: false
+library("tidyverse")
+## library("lme4")
+
+source("../theme_jetblack.R")
+```
+
+## Today's Outline
+
+1. Why Models
+2. Why Regression
+3. This module
+
+## The whole picture
+
+* From Day 1 to now and beyond...
+
+Data Skills $\Rightarrow$ Analysis $\Rightarrow$ Psychometrics $\Rightarrow$ Models $\Rightarrow$ Advanced Options
+
+* Start off with data skills (L1), working through some standard analytical approaches (L2), looked at scale development (L3 Sem 1), now statistical models (L3 Sem 2), with some more advanced options still to come (L4) 
+
+## Stat models: An overview course
+
+Standing on top of everything and looking down, seeing all your different options and how to implement them
+<br><br>
+* Focus is on **breadth** rather than **depth** ... except correlation & regression, which provide the foundation for most advanced techniques
+<br><br>
+**Aim:** basic understanding of statistical models and the skills of how to implement them in R
+
+* quite a practical module; reflected in the assignments
+
+# Part 1: Why models?
+
+## Why statistical models?
+
+::: {style="font-size: 90%;"}
+
+* A statistical model is a **simplification** and **idealization** of reality that captures our key assumptions about how the data came about (the **data generating process** or **DGP**).
+* A statistical model is a "theory" about data and what drives the data we obtain! Models are just models; not the actual data!
+* A models importance is not in its veracity but in its ability to explain what we see!
+
+> *"All models are wrong, but some are useful."* - George Box
+
+::: 
+
+
+## Why models? {.center}
+
+1. Models make things concrete
+2. Models can help improve measurement
+3. Models are flexible
+4. Models can improve our inferences
+5. Models can enable simulation
+
+## Models make things concrete
+
+:::: {.columns}
+
+::: {.column width="50%"}
+![](img/models-concrete.jpg)
+:::
+
+::: {.column width=50%}
+* Allow us to talk about things we can't perceive
+* Force us to make our assumptions explicit
+* Clyde shipbuilders: talking to clients
+:::
+
+::::
+
+* Same with an analyses, if you present your underlying model of data to someone then the assumptions and layout of your idea behind the data is super clear and testable.
+
+## Models improve measurement
+
+:::: {.columns}
+
+::: {.column width="50%"}
+```{mermaid}
+%%| label: happy-measurement
+flowchart RL
+  aC(("d")) --> X1
+  bC(("d")) --> X2
+  cC(("d")) --> X3
+  dC(("d")) --> X4
+  eC(("d")) --> X5
+  X1 & X2 & X3 & X4 & X5 --> C(("life satisfaction"))
+```
+:::
+
+::: {.column width="50%"}
+* Many concepts are 'latent' and cannot be observed in principle
+* observation = truth + error
+* Models can help differentiate the truth from the error and make better predictions, rather than just summing all the scores on a scale together.
+
+:::
+::::
+
+
+## Models are flexible
+
+... recipes aren't!
+
+* I am not a good cook. I open a box of eggs and think scrambled egg or omelette - maybe even some eggy bread if I am feeling dangerous.
+* My wife is an excellent cook and with one box of eggs she can make a whole world of meals, cakes and pastries.
+* My wife understands the models behind cooking and baking; I know a recipe!
+
+## Contrast: recipes are not models
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+![](img/studyres-com.png)
+
+:::
+
+::: {.column width ="50%"}
+
+* Standard approach to teaching statistics.
+* "If you have this, do this...."
+* Reasons to teach it but it is inflexible and easy to make mistakes like a wrong selection of data type
+* Knowing a recipe does not make you a chef.
+
+:::
+::::
+
+::: {.notes}
+- cooking analogy
+- punching buttons on a microwave (pre-packaged food)
+- versus taking fresh ingredients and improvising something
+:::
+
+
+
+## Models are flexible
+
+* Every study design and every resulting data set presents unique challenges to the analyst.
+
+> "If all you have is a hammer, everything looks like a nail"
+
+* Many of the studies we carry out are not as simple as one or two conditions on a single DV. Often you want to take into consideration multiple variables were some are continuous and some are categorical - e.g. the effects on reaction time of age and handedness!
+
+::: {.notes}
+- no study is exactly like any other, every dataset has unique properties
+
+- violation of assumptions
+  - especially: independence
+- discretization of predictors
+- treating categorical data as continuous
+- over-aggregation
+- mindless statistics
+:::
+
+## Models can improve our inferences
+
+...and allow more nuanced questions
+
+* The Stroop test is a classic psychological paradigm where participants are asked to respond to the color of a word, not the word themselves and we measure the reaction time.
+* Main effect is that when the word itself is a color word, then reaction time is much slower as you get a conflict between processes of reading and naming
+* Congruent: [red]{style="color:red;"} -  Incongruent: [red]{style="color:yellow;"}
+* [red]{style="color:yellow;"} would be slowest to react to because the color and word are incongruous
+
+## Models can improve our inferences
+
+![](img/models-improve-inferences.png){fig-align="center"}
+
+* Rouder & Haaf (2021) looked at two data sets of 121 and 264 participants to ask "Does everyone show the stroop effect?"
+* Each white '+' is a participant. Each green circle is a model of that participant.
+
+## Models can improve our inferences
+
+* In brief, Rouder & Haaf (2021) found that just looking at the raw data suggests some do not show the stroop effect or even show the opposite effect - fast to name incongruous trials.
+* However, through modelling, and estimating each participants true effect through sampling more trials, then any unusual effects go away and every does indeed show the stroop effect.
+
+## Models can improve our inferences
+
+![](img/models-improve-inferences.png){fig-align="center"}
+
+* Modelling allows us to get a more accurate representation of what is going on after accounting for error.
+
+
+## Models enable simulation 
+
+::: {style="font-size: 90%;"}
+
+* Data simulation allows us to ask "what if?" questions
+  * Think back to the model of the ship; what happens if I put it in this type of sea.
+  * Same with data; what happens if I run the study like this or like that.
+* Data simulation enables us to estimate power for complex analyses where closed-form solutions are unavailable
+  * calculating power for things like t-tests, correlations, simple regression, etc, it becomes very difficult to estimate power for complex designs without models.
+  * do I need more trials or more participants?
+
+:::
+
+
+# Part 2: Why Regression?
+
+## Why focus on Regression?
+
+Slight simplification: everything is just regression!
+
+:::: {.columns}
+
+::: {.column width="60%"}
+- t-test
+- correlation & regression
+- multiple regression
+- analysis of variance
+- linear mixed-effects modeling
+:::
+
+::: {.column width="40%"}
+- All are special cases of the General Linear Model (GLM).
+:::
+
+::::
+
+## GLM approach
+
+::: {style="font-size: 90%;"}
+
+1.  Define a mathematical model representing the processes that are assumed to give rise to the data
+    - add, subtract, divide and multiply
+2. Estimate the parameters of the model
+    - Parameters are values for different variables in the model
+3. Validate the model
+    - does the model represent the data?
+4. Interpret the results
+5. Transparently report what you did
+   - share your code & (anonymized) data
+
+:::
+
+## Example: Parental reflexes
+
+::: {style="font-size: 90%;"}
+
+Does being the parent of a toddler sharpen your reflexes?
+
+- simple response time to a flashing light
+- dependent (response) variable: mean RT for each parent
+- $H_{0}: RT_{parents} = RT_{controls}$
+- $H_{1}: RT_{parents} \neq RT_{controls}$
+
+We will run this as a t-test, an ANOVA, and a regression to show you some connections!
+
+  - ANOVA (Analysis of Variance) - typically used when there are more than two conditions in an independent variable or more than two independent variables
+
+:::
+
+## Simulating Data
+
+```{r}
+set.seed(1451) # RNG seed: arbitrary integer value
+parents <- rnorm(n = 50, mean = 480, sd = 40)
+```
+
+* `set.seed()` is a random number generator seed. You give it any value and every time you run a code that uses some form of data simulation, you get the same values
+* 1451 here is arbitrary (other than the year the University was founded) but means if you run this code you will get same values.
+
+## Simulating Data
+
+```{r}
+set.seed(1451) # RNG seed: arbitrary integer value
+parents <- rnorm(n = 50, mean = 480, sd = 40)
+```
+
+* ` rnorm()` is a function to create a set of random values (`r`) from the normal distribution (`norm`) given the `n` (number of data points, in this case 50), a `mean` (in this case, $\mu$ = 480), and a standard deviation (SD, in this case, $\sigma$ = 40).
+
+## Simulating data
+
+```{r}
+set.seed(1451) # RNG seed: arbitrary integer value
+parents <- rnorm(n = 50, mean = 480, sd = 40)
+
+parents
+```
+
+* n = 50, $\mu$ = 480 (mu, the mean), $\sigma$ = 40 (sigma, the standard deviation)
+* if you calculate values from data (mean, SD) they will not be exactly what you stated as it is partly random
+
+## Control group
+
+```{r}
+set.seed(1451) # RNG seed: arbitrary integer value
+parents <- rnorm(n = 50, mean = 480, sd = 40)
+
+parents
+control <- rnorm(n = 50, mean = 500, sd = 40)
+
+control
+```
+
+## $t$-test approach
+
+```{r}
+t.test(parents, control, var.equal = TRUE)
+```
+
+
+  * Outcome: t(98) = -2.9687, p = .00376.
+  * The parent group (M = 480.5903) is significantly slower than the control group (M = 504.8443)
+
+## ANOVA approach
+
+```{r}
+dat <- tibble(
+  group = rep(c("parent", "control"), 
+              c(length(parents), length(control))),
+  rt = c(parents, control))
+```
+
+* Here it is easier to work with the data in a `tibble()` (table)
+  * Our `tibble()` has two columns:
+    * group
+    * rt
+  * `rep()` says to copy the word "parent" for the number of parent values there are (`length(parents)`), and then do the same for `control` 
+
+
+## ANOVA approach
+
+```{r}
+dat <- tibble(
+  group = rep(c("parent", "control"), 
+              c(length(parents), length(control))),
+  rt = c(parents, control))
+
+dat
+```
+
+## ANOVA approach
+
+```{r}
+mod_aov <- aov(rt ~ group, dat)    
+```
+
+* run the anova (`aov`) using the DV ~ IV approach
+  * `~`, tilde, means "by" in this context)
+  * `rt` is the DV, `group` is the IV, and the data is stored in `dat`
+
+## ANOVA approach
+
+```{r}
+summary(mod_aov)    
+```
+
+* Outcome ANOVA: F(1,98) = 8.813, p = .00376
+* Outcome t-test: t(98) = -2.9687, p = .00376.
+  * t^2^ = -2.9687^2^ = 8.81318
+  * test values are related and dfs and p-values match
+
+## Regression
+
+::: {style="font-size: 90%;"}
+
+$$Y_i = \beta_0 + \beta_1 X_i + e_i$$
+$$Y_i = intercept + (slope \times X_i) + e_i$$
+$$e_i \sim N(0, \sigma^2)$$
+
+* $Y_i$ - indicates the value of Y for the participant i
+* intercept - the value of Y when X is 0
+* slope - the change in Y for a 1 unit change in X
+* $e_i$ - indicates the error for that participant at that value of Y, which are drawn overall from a Normal (`N`) distribution, with a mean of 0 and a given variance ($\sigma^2$)
+
+:::
+
+## Regression Approach
+
+```{r, echo=FALSE}
+dat %>%
+  mutate(group = ifelse(group == "parent",
+                        "0-parent",
+                        "1-control")) %>%
+ggplot(aes(x = group, y = rt)) + 
+  geom_point() + 
+  geom_segment(aes(x = "0-parent", y = 480.5903, 
+                   xend = "1-control", yend = 504.8443)) +
+  theme_classic()
+```
+
+
+
+```{r}
+mod_lm <- lm(rt ~ group, dat)
+```
+
+* Here we use the `lm()` (linear model) approach
+* Note that this approach enters groups in an alphabetical manner!
+
+## Regression Approach
+
+```{r}
+summary(mod_lm)
+```
+
+## Regression Approach
+
+* Overall Model: F(1,98) = 8.813, p = .00376; same as t-test
+* Intercept: mean of control group, M = 504.844 (alphabetical entry)
+* "groupparent" coefficient: change in Y with a 1 unit change in X; go down 24.254 msecs - 504.844 - 24.254 = 480.59
+* t-value = -2.969, p = .00376; same as t-test
+* At least in the situation where there are only two groups, t-test, ANOVA and regression are identical in values and conclusions.
+
+## Regression is Flexible
+
+| technique        | t-test | ANOVA | regression |
+|:-----------------|-------:|------:|-----------:|
+| Categorical IVs  |      ✓ |     ✓ |          ✓ |
+| Continuous DVs   |      ✓ |     ✓ |          ✓ |
+| Continuous IVs   |      - |     ? |          ✓ |
+| Multi-level data |      ? |     ? |          ✓ |
+| Categorical DVs  |      - |     - |          ✓ |
+| Unbalanced data  |      - |     - |          ✓ |
+| >1 sampling unit |      - |     - |          ✓ |
+
+## Four functions to rule them all
+
+1. Is the data single- or multi-level (i.e. one observation per participant or many)?
+2. Is the response continuous or discrete?
+3. How are the observations distributed?
+
+| structure | response  | distribution | R function      |
+|:----------|:----------|:-------------|:----------------|
+| single    | cont      | normal       | `base::lm()`    |
+| single    | cont/disc | various      | `base::glm()`   |
+| multi     | cont      | normal       | `lme4::lmer()`  |
+| multi     | cont/disc | various      | `lme4::glmer()` |
+
+# Part 3: This module!
+
+## {.smaller}
+
+#### [Part 1: Phil McAleer on Regression & multilevel models with univariate data]{style="color:yellow;"}
+
+| lecture | topic                    |
+|---------|--------------------------|
+| 1       | introduction             |
+| 2       | correlation & regression |
+| 3       | multiple regression      |
+| 4       | interactions             |
+| 5       | multilevel models        |
+
+#### [Part 2: Dale Barr on Multivariate models & psychometrics (more than one DV or interlinked variables)]{style="color:yellow;"}
+
+| lecture | topic (potential)                                      |
+|---------|---------------------------------------------|
+| 6       | introduction to multivariate data           |
+| 7       | path analysis                               |
+| 8       | mediation models                            |
+| 9       | confirmatory factor analysis                |
+
+
+## How it will go
+
+Course materials available on Moodle:
+
+- Online book
+- Lecture slides & recordings
+- Weekly formative exercises
+  - download R Markdown 'stub' file and fill in with code
+
+Complete the formative exercises *after* attending each lecture.
+
+Read the corresponding book chapter before *before* attempting the formative assignment.
+
+## Formative assignments
+
+- Download the assignment files from Moodle$^*$
+- Fill your answers into the code chunks provided
+- Check for errors (knitting and validation)
+- Complete and submit the plain R Markdown file on Moodle before the due date 
+- Compare your answers with the solution
+
+::: {.aside}
+$^*$Look for your assignment files under 'feedback files'. One will be an R Markdown file (.Rmd). Others will be associated data files.
+:::
+
+::: {.notes}
+due date: the day before the following lecture
+
+solutions available: day of the following lecture
+
+TODO: show an example for Formative 1
+:::
+
+## Help and discussion
+
+- My student drop-in hours:
+  - 58/60 Hillhead Street, Room 441
+  - Tuesdays 3pm-5pm (normally)
+- Microsoft Teams channel
+
+::: {.aside}
+Communication is important! 
+
+NB: If you have a question it is better to ask it on the Teams channel than by email/DM so that others can benefit
+:::
+
+## Assessment
+
+Two one-hour, timed, online assessments held during reading week and the week of the final lecture (dates on Moodle).
+
+- First assessment: chapters/lectures 1-5
+- Second assessment: chapters/lectures 6-9
+
+Question format:
+
+- Multiple choice / true-false questions
+- Variations on the formative exercises
+
+## Hot tip!
+
+::: {.callout-tip}
+Summative assessments will involve the same basic workflow as the formative assessments and the best way to prepare for the summative is to do the formative tasks. Completing the full workflow (including submission) for all the formative assessments is the best way to avoid nasty surprises.
+
+You need to make sure you have the necessary technical resources including software ready to go in time for the assessment. Downloading packages, making sure things run and knit, etc.
+
+Formative assignments are somewhat longer than the summative assignments but they are to give you the idea of what will happen. The summative assignments will be set to be very achievable in the duration of the test.
+:::
+
+## For next week
+
+- Get your workstation in order
+  - R version 4.1.0 or higher
+  - R packages for analysis:
+    - `tidyverse`, `lme4`, `psych`, `corrr`, `lavaan`
+  - R packages for working with R markdown
+	- `rmarkdown`, `knitr`
+- Attempt formative assignment 1
+
+# Next Week
+
+Correlations and Simple Regression
