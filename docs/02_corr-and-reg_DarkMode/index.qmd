@@ -1,0 +1,660 @@
+---
+title: "Statistical Models"
+subtitle: "Lecture 2 - Correlation and Regression (Review)"
+author: 
+  - name: "Phil McAleer"
+    email: "philip.mcaleer@glasgow.ac.uk"
+    affiliation: "University of Glasgow"
+format: 
+  revealjs:
+    theme: dark 
+    code-line-numbers: false
+    chalkboard: true
+    mermaid: 
+      theme: default
+knitr:
+  opts_chunk:
+    echo: true
+---
+
+```{r}
+#| label: setup
+#| include: false
+library("tidyverse")
+## library("lme4")
+
+source("../theme_jetblack.R")
+
+.pos <- MASS::mvrnorm(500, c(0, 0), matrix(c(1, .6, .6, 1), ncol = 2))
+.neg <- MASS::mvrnorm(500, c(0, 0), matrix(c(1, -.6, -.6, 1), ncol = 2))
+.none <- MASS::mvrnorm(500, c(0, 0), matrix(c(1, 0, 0, 1), ncol = 2))
+
+.mytib <- tibble(
+  relationship = factor(c("negative", "none", "positive"),
+			levels = c("negative", "none", "positive")),
+  data = list(tibble(x = .neg[, 1], y = .neg[, 2]),
+	      tibble(x = .none[ ,1], y = .none[, 2]),
+	      tibble(x = .pos[, 1], y = .pos[, 2])))  |>
+  unnest(data)
+
+```
+
+## Part 1: Statistical Models
+
+| lecture | topic                    |
+|---------|--------------------------|
+| [1]{style="color:gray;"}       | [introduction]{style="color:gray;"}             |
+| 2       | correlation & regression |
+| [3]{style="color:gray;"}       | [multiple regression]{style="color:gray;"}      |
+| [4]{style="color:gray;"}       | [interactions]{style="color:gray;"}             |
+| [5]{style="color:gray;"}       | [multilevel models]{style="color:gray;"}        |
+
+# This Week
+
+1. Notation
+2. Correlation
+3. Regression
+
+Hopefully most will feel like review but with a few more formulas to look at!
+
+# Notation
+
+## Lost in Notation - Terms
+
+* **univariate**: one variable of interest (t-test, regression)
+* **bivariate**: two variables of interest (correlation)
+* **multivariate**: more than two variables of interest (mediation, path analysis)
+
+* **single-level**: one observation (data point) per participant (or unit of measurement) - e.g. an average reaction time across all trials
+* **multi-level**: more than one observation per unit of measurement - e.g. reaction time on each trial
+
+## Lost in Notation - Statistics
+
+* Latin alphabet: observed variables associated with the sample ("statistics")
+  *  $X$, $Y$, $r$, etc
+  * i.e. the values that you have actually measured through some process of research on your sample - e.g. data collection
+
+## Lost in Notation - Statistics
+
+* Greek alphabet: unobserved variables associated with the population ("parameters")
+  * $\beta$ (beta), $\sigma$ (sigma), $\rho$ (rho)
+  * the values that you can't measure but want to say something about in your population
+
+## Lost in Notation - Statistics
+
+* Estimated parameter value: values that you are making some inference about in the population based on the sample values
+  * often shown as Greek letters with little party hats on, $\hat{}$
+  * $\hat{\beta}$ (beta hat), $\hat{\sigma}$ (sigma hat), $\hat{\rho}$ (rho hat)
+  
+* Summation notation (capital "sigma")
+  - $\Sigma X$ : add up all $X$ values
+  * Note: the word sigma and sign for sigma appears as other concepts as well but will point this out when it happens
+
+## Lost in Notation - Univariate Stats
+
+[mean ($\mu$, $\bar{X}$):]{style="color:yellow;"} $\bar{X} = \frac{\Sigma X}{N}$
+
+* $\mu$ (mu) - population mean; $\bar{X}$ (x-bar) - sample mean
+* Sum up all the values of X ($\Sigma X$) and divide by the number of data points (N)
+* A point estimate that locates your data in a space
+
+## Lost in Notation - Univariate Stats
+
+[deviation score:]{style="color:yellow;"} $X - \bar{X}$
+
+* A measure of how far a point is from a reference point. 
+* In this case how far X is from the mean ($\bar X$)
+* If IQ has a mean of 100, 
+  * then a person with an IQ of 90 has a deviation score of -10 (90-100 = -10), 
+  * and a person with an IQ of 115 has a deviation score of 15 (115-100 = 15)
+
+## Lost in Notation - Univariate Stats
+
+[$z$-score:]{style="color:yellow;"}
+
+$z = \frac{X - \bar{X}}{S_X}$
+  
+* A standardised deviation score that converts data to the Normal Distribution
+  * X minus the mean ($\bar X$), divided by the standard deviation (SD) of X ($S_x$)
+  * $S_X$ - sample SD and $\sigma_x$ - population SD
+  * Z = 1 means 1SD above the mean; Z = -2 means 2SD below the mean.
+
+## Lost in Notation - Univariate Stats
+
+[standard deviation ($\sigma$, $S$):[^1]]{style="color:yellow;"}
+  $$S = \sqrt{\frac{\Sigma \left(X - \bar{X}\right)\left(X - \bar{X}\right)}{N}}$$
+
+* Measure of the average spread of the data around the mean. Large SD means widespread data. Small SD means all data relatively similar.
+* Is based on deviation scores as you can see from formula
+
+[^1]: *more often than not, divided by $N-1$ instead of $N$ to estimate population value*
+  
+## Lost in Notation - Univariate Stats
+
+[variance (${\sigma}^2$, ${S}^2$):]{style="color:yellow;"}
+  $${S}^2 = \frac{\Sigma \left(X - \bar{X}\right)\left(X - \bar{X}\right)}{N}$$
+
+* Similar to SD is a measure of the overall spread but in squared units.
+
+[Relationship between variance and SD]{style="color:yellow;"}
+
+* Square root of variance is the standard deviation 
+* The square of the standard deviation is the variance
+
+[^1]: *more often than not, divided by $N-1$ instead of $N$ to estimate population value*
+
+# Correlation & Bivariate Data
+
+## bivariate data {.smaller}
+
+:::: {.columns}
+
+::: {.column width="40%"}
+
+::: {.r-stack}
+<iframe src="https://dalejbarr.github.io/bivariate/index.html" width="420" height="640" style="border: none; background-color: white; text-align: center;"></iframe>
+:::
+
+:::
+
+::: {.column width="60%"}
+
+* [scatterplot:]{style="color:yellow;"} a two-dimensional figure (x and y) representing the relationship in bivariate data (i.e. the relationship between two variables)
+* App on left can be used to highlight the effect of:
+  * Changing the mean of either variable (moves location in space) - slide $\mu$ lines
+  * Changing the standard deviation of either variable (affecting the spread) - slide $\sigma$ lines
+  * Changing the correlation between the two variables - slide $\rho$ lines
+
+:::
+
+::::
+
+
+## bivariate data {.smaller}
+
+[covariance ($cov_{XY}$):]{style="color:yellow;"}
+  $$cov_{XY} = \frac{\Sigma \left(X - \bar{X}\right)\left(Y - \bar{Y}\right)}{N}$$
+
+* The relationship between the deviation scores in X and the deviation scores in Y
+  * sum of the deviations in X multiplied by the deviation in Y, all divided by N.
+  * if X is bigger than its mean and Y is bigger than its mean (or they are both smaller than their means) then you likely to have a high covariance
+  * if sometimes X is bigger and Y is smaller (than their means) and vice versa, covariance will be low.
+  * covariance is dependent on the scales you measure in so we standardise to give the correlation
+
+## bivariate data
+
+[correlation ($\rho_{XY}$, $r_{XY}$)]{style="color:yellow;"}
+  $$r_{XY} = \frac{cov_{XY}}{S_X S_Y} = \frac{\Sigma z_x z_y}{N}$$
+
+* Standardised measure of covariance so the values are limited to between 1 and -1
+  * Correlation is the covariance of X and Y, divided by the standard deviation of X times the standard deviation of Y
+  * Can also be established through Z scores
+
+## bivariate data
+
+[Relationship between covariance, correlation and SD]{style="color:yellow;"}
+
+
+$$r_{XY} = \frac{cov_{XY}}{S_X S_Y} = \frac{\Sigma z_x z_y}{N}$$
+$$cov_{XY} = r_{XY} S_X S_Y \text{ or } \rho_{XY} \sigma_X \sigma_Y$$
+
+* Covariance can be calculated by multiplying the correlation of X and Y with the SD of X and the SD of Y
+* if you know the three out of four of the covariance, the correlation and the two standard deviations (or variances), you can calculate the fourth.
+
+## correlation coefficient
+
+Typicaly denoted as $\rho$ (Greek symbol 'rho') or $r$
+
+$-1 \ge r \le 1$
+
+- $r > 0$: positive relationship
+- $r < 0$: negative relationship
+- $r = 0$: no relationship
+
+Estimated using Pearson or Spearman (rank) method 
+
+- `cor()`, `cor.test()`, `corrr::correlate()`
+
+## covariance matrices & simulation {.smaller}
+
+:::: {.columns}
+
+::: {.column width="40%"}
+
+::: {.r-stack}
+<iframe src="https://dalejbarr.github.io/bivariate/index.html" width="420" height="640" style="border: none; background-color: white; text-align: center;"></iframe>
+:::
+
+:::
+
+::: {.column width="60%"}
+
+We mentioned that at times we will use models to simulate data:
+
+* In order to simulate bivariate data you need to know five values:
+  * the correlation ($\rho_{xy}$)
+  * the standard deviation of X ($\sigma_x$)
+  * the standard deviation of Y ($\sigma_y$)
+  * the mean of X ($\mu_x$)
+  * the mean of Y ($\mu_y$)
+* Formula shown in "math" tab but we won't ever do this by hand. We will need to understand covariance matrices going forward so....
+
+:::
+
+::::
+
+## Covariance Matrix {.smaller}
+
+* A matrix is a dimensional structure/table with values arranged in rows and columns
+* covariance matrix is (annoyingly) symbolised often as $\Sigma$ (sigma) and has structure:
+
+$$
+\mathbf{\Sigma} =
+\begin{pmatrix}
+{\sigma_x}^2                & \rho_{xy} \sigma_x \sigma_y \\
+\rho_{yx} \sigma_y \sigma_x & {\sigma_y}^2 \\
+\end{pmatrix}
+$$
+
+## Covariance Matrix {.smaller}
+
+* A matrix is a dimensional structure/table with values arranged in rows and columns
+* covariance matrix is (annoyingly) symbolised often as $\Sigma$ (sigma) and has structure:
+
+$$
+\mathbf{\Sigma} =
+\begin{pmatrix}
+{\sigma_x}^2                & \rho_{xy} \sigma_x \sigma_y \\
+\rho_{yx} \sigma_y \sigma_x & {\sigma_y}^2 \\
+\end{pmatrix}
+$$
+
+Or more simply:
+
+$$
+\Sigma = \begin{pmatrix}
+\text{var}_X & \text{cov}(X,Y) \\
+\text{cov}(Y,X) & \text{var}_Y
+\end{pmatrix}
+$$
+* in this 2-by-2 matrix (two columns, two rows), the top left is variance of X, top right is covariance of X and Y, bottom left is covariance of Y and X, bottom right is variance of Y
+
+* Note: $cov(Y,X)$ and $cov(X,Y)$ are the same thing!
+
+## Covariance Matrix {.smaller}
+
+Say you have X with M = 4.11, SD = .26, and Y with M = 4.74, SD = .65, and the correlation between the two is r = .96
+
+* Variance X = $SD_X \times SD_X = .26 \times .26 = .067$
+* Variance Y = $SD_Y \times SD_Y = .65 \times .65 = .423$
+* Covariance XY = $r_{XY} \times SD_x \times SD_Y = .96 \times .26 \times .65 = .162$
+
+$$
+\Sigma = \begin{pmatrix}
+\text{var}_X & \text{cov}(X,Y) \\
+\text{cov}(Y,X) & \text{var}_Y
+\end{pmatrix} = \begin{pmatrix}
+\text{.067} & \text{.162} \\
+\text{.162} & \text{.423}
+\end{pmatrix}
+$$
+
+* This is explored more in the chapter for the lecture by Dale but hopefully gives some step into understanding these matrices.
+* Again, we use these to simulate data, along with the means, in functions like `MASS::mvrnorm()`
+
+# regression
+
+## univariate analyses
+
+$$Y = ???$$
+
+::: {.fragment}
+- predicting from the mean
+  - mean height of a 16-24 y.o. Scot: 170cm (about 5'7")
+:::
+  
+::: {.fragment} 
+- using other knowledge
+  - 16-24 y.o. man: $\bar{X}$ = 176.2 (~5'9"), $S_X$ = 6.9cm (~2.7")
+  - 16-24 y.o. woman: $\bar{X}$ = 163.8 (~5'5"), $S_X$ = 5.6cm (~2.2")
+:::
+
+::: {.aside}
+Scottish height statistics from the 2008 Scottish Health Survey
+:::
+
+
+## lines
+
+$$Y_i = \beta_0 + \beta_1 X_i$$
+
+* [$\beta_0$ (y-intercept)]{style="color:yellow;"}: value of $Y$ where the line cuts through the vertical axis ($X=0$)
+* [$\beta_1$ (slope)]{style="color:yellow;"}: effect of 1 unit increase of $X$ on the value of $Y$
+$$\beta_1 = \frac{\Delta_Y}{\Delta_X}$$
+
+
+::: {.aside}
+- $\Delta$ (delta) means "change in"
+- In regression we measure X and Y and estimate $\beta$, hence difference in notations
+:::
+
+## lines {.smaller}
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+$$Y_i = \beta_0 + \beta_1 X_i$$
+
+* **E.g. 1:** if you plotted a line that crossed the y-axis at 2, and for every change of 1 in X, you went up 2 in Y, the equation would be:
+
+$$Y_i = 2 + 2 X_i$$
+
+* shown in white solid line
+
+:::
+
+::: {.column width="70%"}
+
+::: {.r-stack}
+
+```{r}
+#| echo: false
+#| fig-width: 6
+#| fig-height: 6
+tibble(x = -2:5, y = -2:5) |>
+  ggplot(aes(x, y)) +
+  geom_hline(yintercept = 0, color = "white") +
+  geom_vline(xintercept = 0, color = "white") +
+  coord_cartesian(xlim = c(-2, 5),
+                  ylim = c(-2, 5)) +
+  geom_abline(intercept = 2, slope = 2, color = "white", linewidth = 3) +
+  theme_jetblack()  
+```
+
+:::
+
+:::
+
+::::
+
+## lines {.smaller}
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+$$Y_i = \beta_0 + \beta_1 X_i$$
+
+* **E.g. 2:** if you plotted a line that crossed the y-axis at 1, and for every change of 1 in X, you went up 2 in Y, the equation would be:
+
+$$Y_i = 1 + 2 X_i$$
+
+* shown in red dashed line
+
+:::
+
+::: {.column width="70%"}
+
+::: {.r-stack}
+
+```{r}
+#| echo: false
+#| fig-width: 6
+#| fig-height: 6
+tibble(x = -2:5, y = -2:5) |>
+  ggplot(aes(x, y)) +
+  geom_hline(yintercept = 0, color = "white") +
+  geom_vline(xintercept = 0, color = "white") +
+  coord_cartesian(xlim = c(-2, 5),
+                  ylim = c(-2, 5)) +
+  geom_abline(intercept = 2, slope = 2, color = "white", linewidth = 3) +
+  geom_abline(intercept = 1, slope = 2, color = "red", linewidth = 3, linetype = "dashed") +
+  theme_jetblack()  
+```
+
+:::
+
+:::
+
+::::
+
+## lines {.smaller}
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+$$Y_i = \beta_0 + \beta_1 X_i$$
+
+* **E.g. 3:** if you plotted a line that crossed the y-axis at 3, and for every change of 1 in X, you went down 2 in Y, the equation would be:
+
+$$Y_i = 3 + -2 X_i$$
+or 
+
+$$Y_i = 3 - 2 X_i$$
+
+* shown in yellow dashed line
+
+:::
+
+::: {.column width="70%"}
+
+::: {.r-stack}
+
+```{r}
+#| echo: false
+#| fig-width: 6
+#| fig-height: 6
+tibble(x = -2:5, y = -2:5) |>
+  ggplot(aes(x, y)) +
+  geom_hline(yintercept = 0, color = "white") +
+  geom_vline(xintercept = 0, color = "white") +
+  coord_cartesian(xlim = c(-2, 5),
+                  ylim = c(-2, 5)) +
+  geom_abline(intercept = 2, slope = 2, color = "white", linewidth = 3) +
+  geom_abline(intercept = 1, slope = 2, color = "red", linewidth = 3, linetype = "dashed") +
+  geom_abline(intercept = 3, slope = -2, color = "yellow", linewidth = 3, linetype = "dashed") +
+  theme_jetblack()  
+```
+
+:::
+
+:::
+
+::::
+
+## Ordinary Lead Squares Regression {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+$$Y_i = \beta_0 + \beta_1 X_i + e_i$$
+
+$$\hat{Y}_i = \beta_0 + \beta_1 X_i$$
+
+- $Y_i$: response variable (criterion, DV)
+- $\hat{Y}_i$: fitted value
+- $X_i$: predictor variable (IV)
+- $\beta_0$, $\beta_1$: coefficients
+- $e_i$: error; $\hat{e}_i = Y_i - \hat{Y}_i$: residual
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| echo: false
+#| fig-width: 6
+#| fig-asp: 1
+
+set.seed(1451)
+nobs <- 18
+x <- rnorm(nobs, 2.5, sd = 1.5)
+y <- 1.5 + .6 * x + rnorm(nobs, sd = 1)
+reg <- coef(lm(y ~ x))
+
+g <- tibble(x = x, y = y) |>
+  ggplot(aes(x, y)) +
+  geom_hline(yintercept = 0, color = "white") +
+  geom_vline(xintercept = 0, color = "white") +
+  geom_point(color = "yellow") +
+  coord_cartesian(xlim = c(-1, 5),
+                  ylim = c(-1, 5)) +
+  theme_jetblack()
+
+g
+```
+
+:::
+
+::::
+
+* fitted values represent points on the line of best fit
+* residuals: difference between the fitted values (line) and observed values (data points)
+
+## Ordinary Lead Squares Regression {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+$$Y_i = \beta_0 + \beta_1 X_i + e_i$$
+
+$$\hat{Y}_i = \beta_0 + \beta_1 X_i$$
+
+- $Y_i$: response variable (criterion, DV)
+- $\hat{Y}_i$: fitted value
+- $X_i$: predictor variable (IV)
+- $\beta_0$, $\beta_1$: coefficients
+- $e_i$: error; $\hat{e}_i = Y_i - \hat{Y}_i$: residual
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| echo: false
+#| fig-width: 6
+#| fig-asp: 1
+
+cfstr <- sprintf("Y = %0.1f + %0.1f X", reg[1], reg[2])
+mstr <- sprintf("(%0.1f, %0.1f)", mean(x), mean(y))
+
+g + geom_smooth(method = "lm", se=FALSE) +
+  geom_label(aes(x = 4, y = -1, label = cfstr),
+             stat = "unique", color = "blue", size = 6) +
+  geom_point(data = tibble(x = mean(x), y = mean(y)),
+             color = "green", size = 4, shape = 3) +
+  geom_text(aes(x = mean(x), y = mean(y), label = mstr),
+                color = "green", nudge_y = -.5)
+```
+
+:::
+
+::::
+
+* line of best fit minimizes "sum squared error" - the sum of the squared residuals
+* line passes through $(\bar{X}, \bar{Y})$
+
+## Fitting in R with `lm()`
+
+```{r, eval=FALSE}
+mod <- lm(y ~ x)
+
+summary(mod)
+```
+
+* `lm()` stands for linear (l) model (m)
+* We are fitting a linear model between y and x and storing it in `mod`
+* Note we don't need to write in the intercept or the error term, just the predictors. R knows to do the rest.
+* Here, I am going to use the same data from the previous slides with slope = .5 and intercept = 1.8
+
+## Fitting in R with `lm()` {.smaller}
+
+```{r}
+mod <- lm(y ~ x)
+
+summary(mod)
+```
+
+## Fitting in R with `lm()` {.smaller}
+
+```{r}
+mod <- lm(y ~ x)
+
+summary(mod)
+```
+
+* F-test: $H_1$: $R^2 \ne 0$
+* t-test, intercept: $H_1$: $\beta_0 \ne 0$
+* t-test, variable: $H_1$: $\beta_1 \ne 0$
+
+## Fitting in R with `lm()`
+
+```{r}
+mod <- lm(y ~ x)
+
+mod$coefficients
+```
+
+* $\beta_0$ is the intercept coefficient; $\beta_1$ is the variable coefficient
+* $\hat{Y}$ = 1.7582 + 0.5X
+* So if X = 1, then $\hat{Y}$ = 1.7582 + 0.5 $\times$ 1 = 2.2582
+* Remember that value ($\hat{Y}$) is a fitted value, or predicted value, not observed, so it sits on the line of best fit. How accurate it is depends on the R-squared of your model.
+
+
+# relationship between correlation & regression
+
+## {.smaller}
+
+:::: {.columns}
+
+::: {.column width="40%"}
+
+::: {.r-stack}
+<iframe src="https://dalejbarr.github.io/bivariate/index.html" width="420" height="640" style="border: none; background-color: white; text-align: center;"></iframe>
+:::
+
+:::
+
+::: {.column width="60%"}
+
+Note: standard deviations can never be negative
+Note: the ratio between the standard deviation of Y and X affect the slope:
+
+- $\beta_1 = \rho_{XY} \frac{\sigma_Y}{\sigma_X}$
+- $\beta_0 = \mu_{Y} - \mu_{X}\beta_1$
+
+So, when standard deviation of X and Y are the same:
+
+- $\beta_1=0$ is the same as $\rho = 0$
+- $\beta_1>0$ implies $\rho > 0$
+- $\beta_1<0$ implies $\rho < 0$
+- Rejecting the null hypothesis that $\beta_1 = 0$ is the same as rejecting the null hypothesis that $\rho = 0$
+
+:::
+
+::::
+
+# assumptions
+
+## assumptions
+
+In Regression and Pearson correlation we assume: 
+
+- [**linearity**]{style="color: yellow;"}: the relationship between $X$ and $Y$ is linear as opposed to non-linear (e.g. the relationship between attention and lecture time is non-linear - u-shaped)
+- [**normality of residuals**]{style="color: yellow;"}: deviations from line of best fit are normally distributed; note: residuals not variable
+- [**homogeneity of variance**]{style="color: yellow;"}: variance of $Y$ is constant across values of $X$ and not funnel shaped (narrow one end and spread out other end)
+- [**independence of residuals**]{style="color: yellow;"}: residuals on one data point don't predict another
+
+# Activities & Next Week
+
+Activities:
+
+* Formative Data Task on Moodle
+* Chapter 2 of the Book
+
+Next Week:
+
+* Multiple Regression
