@@ -1,0 +1,742 @@
+---
+title: "Statistical Models"
+subtitle: "Lecture 3 - Multiple Regression"
+author: 
+  - name: "Phil McAleer"
+    email: "philip.mcaleer@glasgow.ac.uk"
+    affiliation: "University of Glasgow"
+format: 
+  revealjs:
+    theme: dark 
+    code-line-numbers: false
+    chalkboard: true
+    mermaid: 
+      theme: default
+knitr:
+  opts_chunk:
+    echo: true
+---
+```{r}
+#| label: setup
+#| include: false
+
+options(tidyverse.quiet=TRUE)
+library("lme4")
+library("corrr")
+library("tidyverse")
+
+# options(width = 60)
+
+set.seed(62)
+
+.cnames <- c("grade", "GPA", "lecture", "nclicks")
+.cmx <- .cmx0 <- matrix(NA, nrow = 4, ncol = 4,
+                        dimnames = list(.cnames, .cnames))
+
+.cmx0[upper.tri(.cmx0)] <- sample(1:6)/10
+.cmx0[2:4, 1] <- .cmx0[1, 2:4]
+.cmx0[3:4, 2] <- .cmx0[2, 3:4]
+.cmx0[4, 3] <- .cmx0[3, 4]
+
+diag(.cmx) <- diag(.cmx0) <- 1
+.sds <- c(1, 0.7, 2, 15)
+for (i in 1:nrow(.cmx0)) {
+  for (j in 1:ncol(.cmx0)) {
+    .cmx[i, j] <- .cmx0[i, j] * .sds[i] * .sds[j]
+  }
+}
+
+.grades <- MASS::mvrnorm(100,
+                         c(grade = 2.5, GPA = 2.5, lecture = 7, nclicks = 100),
+                         .cmx) %>%
+  as_tibble() %>%
+  mutate(grade = case_when(grade < 0 ~ 0,
+                           grade > 4 ~ 4,
+                           TRUE ~ grade),
+         GPA = case_when(GPA < 0 ~ 0,
+                         GPA > 4 ~ 4,
+                         TRUE ~ GPA),
+         lecture = case_when(lecture < 0 ~ 0L,
+                             lecture > 10 ~ 10L,
+                             TRUE ~ as.integer(round(lecture))),
+         nclicks = as.integer(round(nclicks)))
+
+dir.create("data", FALSE)
+write_csv(.grades, "data/grades.csv")
+```
+
+## moving beyond simple regression
+
+- correlation matrices
+- multiple regression
+- comparing models
+- coding categorical predictors
+
+# correlation matrices
+
+## 
+
+::: {.callout-note}
+
+## how many correlations for $n$ variables?
+
+*Note that $\rho_{xy}$ = $\rho_{yx}$.*
+
+For any $n$ measures, you can calculate $\frac{n (n - 1)}{2}$ unique pairwise correlations between measures. So, if you have six measurements, you have
+
+$$
+\frac{6 (6 - 1)}{2} = \frac{30}{2} = 15
+$$
+
+So with 6 measures you have 15 unique correlations.
+
+* 2 variables, 1 correlation as 2(2-1)/2 = 1
+* 3 variables, 3 correlations
+* 5 variables, 10 correlations
+
+:::
+
+## grades {.smaller}
+
+[`grades.csv`](data/grades.csv){target="_download"}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+#| label: import-grades1
+#| echo: false
+grades <- read_csv("data/grades.csv", col_types = "ddii")
+
+knitr::kable(grades |>
+             head(10), digits = 2)
+```
+:::
+
+::: {.column width="50%"}
+- `{r} nrow(grades)` rows (students)
+- `grade`: grade at end of semester
+- `lecture`: number of lectures attended (out of 10)
+- `nclicks`: engagement with online materials
+
+[How well does engagement (measured by lecture attendance / clicks on materials) predict grade?]{style="color:yellow;"}
+
+* a potentially clunky operationalisation but we can live with it today!
+:::
+
+::::
+
+## correlation matrix {.smaller}
+
+:::: {.columns}
+
+::: {.column width="70%"}
+
+```{r}
+#| label: grades-cmx1
+#| echo: false
+grades |>
+  corrr::correlate(diagonal = 1) |>
+  corrr::fashion() |>
+  knitr::kable(digits = 3, align = "lrrrr")
+```
+
+:::
+
+::: {.column width="30%"}
+
+```{r}
+#| label: grades-plot
+#| echo: false
+#| fig-width: 3
+#| fig-height: 1.8
+grades |>
+  corrr::correlate(diagonal = NA) |>
+  corrr::shave() |>
+  rplot(print_cor = TRUE)
+```
+
+:::
+
+::::
+
+- Each row x col entry corresponds to the **bivariate correlation** between those variables
+- upper & lower triangle; diagonal
+- can be turned into fancy color plots using `rplot()`
+
+```{r}
+#| label: grades-plot-code
+#| eval: false
+grades |>
+  corrr::correlate(diagonal = NA) |>
+  corrr::shave() |>
+  rplot(print_cor = TRUE)
+```
+
+## correlation matrix {.smaller}
+
+As they are symmetric you often see them as:
+
+
+```{r}
+#| label: grades-plot2
+#| echo: false
+
+grades |>
+  corrr::correlate(diagonal = NA) |>
+  corrr::shave(upper = FALSE) |>
+  corrr::fashion(decimals = 3) |>
+  knitr::kable()
+```
+
+Coded through:
+
+```{r, eval=FALSE}
+grades |>
+  corrr::correlate(diagonal = NA) |>
+  corrr::shave(upper = FALSE) |>
+  corrr::fashion(decimals = 3) |>
+  knitr::kable()
+```
+
+## scatterplots
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+#| fig-height: 6
+#| fig-width: 5
+#| echo: false
+opar <- par(bg = "black", fg = "white", cex = .8)
+pairs(grades, col = rgb(1, 1, 0, .5), pch = 20)
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r, eval=FALSE}
+pairs(grades)
+```
+
+* checking for linearity
+* when you see striation patterns, (e.g. GPA by lecture) it suggests whole numbers that you would want to check what type of data they were.
+
+:::
+
+::::
+
+# Multiple Regression
+
+## Multiple Regression
+
+Simple Linear Regression:
+
+$$Y_i = \beta_0 + \beta_1 X_{1i} + e_i$$
+
+Multiple Linear Regression:
+
+$$Y_i = \beta_0 + \beta_1 X_{1i} + \beta_2 X_{2i} + \ldots + \beta_m X_{mi} + e_i$$
+
+* Both are univariate; only interested in one outcome (dependent) variable, regardless of number of predictor variables. Multiple regression just has more predictors than simple regression.
+
+## 
+
+General model for data with $m$ predictors:
+
+$$Y_i = \beta_0 + \beta_1 X_{1i} + \beta_2 X_{2i} + \ldots + \beta_m X_{mi} + e_i$$
+
+* individual $X$s can be any combination of continuous and categorical predictors (and their interactions)
+* Each $\beta_j$ is the *partial effect of $X_{j}$ on $Y_i$ holding all other $X$s constant*
+
+## Partial Effects {.smaller}
+
+Note: In Simple Regression, the ratio between the standard deviation of Y and X affect the slope:
+
+- $\beta_1 = \rho_{XY} \frac{\sigma_Y}{\sigma_X}$
+- $\beta_0 = \mu_{Y} - \mu_{X}\beta_1$
+
+So, in Simple Regression, when standard deviation of X and Y are the same:
+
+- $\beta_1=0$ is the same as $\rho = 0$
+- $\beta_1>0$ implies $\rho > 0$
+- $\beta_1<0$ implies $\rho < 0$
+- Rejecting the null hypothesis that $\beta_1 = 0$ is the same as rejecting the null hypothesis that $\rho = 0$
+- the correlation between X and Y squared, is literally R-squared in your regression model
+
+## 
+
+General model for data with $m$ predictors:
+
+$$Y_i = \beta_0 + \beta_1 X_{1i} + \beta_2 X_{2i} + \ldots + \beta_m X_{mi} + e_i$$
+
+* Each $\beta_j$ is the *partial effect of $X_{j}$ on $Y_i$ holding all other $X$s constant*
+* $\beta_1$ is not now simply the correlation between X and Y, when standardised, but is the relationship between X and Y after taking into consideration all other predictors in the model.
+* $\beta_1$ will change depending on how many predictors are in the model (as will all other $\beta$s)
+* No longer fitting a "line of best fit" but a "plane of best fit".
+
+## example questions
+
+- RQ1: Are lecture attendance and engagement with online materials associated with higher course grades?
+
+- RQ2: Does this relationship hold "after controlling for" overall GPA?
+
+
+## estimation {.smaller}
+
+$$grade_i = \beta_0 + \beta_1 lectures_{i} + \beta_2 nclicks_{i} + e_i$$
+
+```{r}
+#| label: fit-mod-fake
+#| eval: false
+mod <- lm(grade ~ lecture + nclicks, data = grades)
+summary(mod)
+```
+
+
+:::: {.columns}
+
+::: {.column width="60%"}
+
+```{r}
+#| label: fit-mod-real
+#| echo: false 
+mod <- lm(grade ~ lecture + nclicks, data = grades)
+summary(mod)
+```
+
+
+```{r}
+#| label: fit-mod-secret
+#| include: false
+.m1 <- grades |>
+  lm(grade ~ lecture + nclicks, data = _) |>
+  summary() |>
+  capture.output()
+
+.orig_ix <- grep("^Coefficients:$", .m1)
+.cf_orig <- .m1[.orig_ix:(.orig_ix + 4L)]
+```
+
+::: 
+
+::: {.column width="40%"}
+
+* each coefficient is tested against $H_0$: $\beta = 0$, (t-tests)
+* F-test checks model, F(2,97) = 18.12, p < .001 (better than predicting with mean of Y, grades)
+* Residual Standard Error is the Sum Squares of Error - basically estimate of the difference between residuals & fitted "plane".
+
+:::
+
+::::
+
+## mean centering predictors 
+
+Intercept is not always meaningful (Grade = -1.1?)
+
+- Mean centering makes y-intercept more interpretable 
+  - e.g. predicted grades compared to an average student?
+- new pred = old pred - mean(old pred)
+  - `lecture_c = lecture - mean(lecture)`
+  - `nclicks_c = nclicks - mean(nclicks)`
+  - deviation scores that compares every student to the mean score (e.g. a score of 0 would show they are right on the mean score)
+  
+## mean centering predictors
+
+```{r}
+#| eval: false
+lm(grade ~ lecture_c + nclicks_c, data = grades)
+```
+
+```{r}
+#| label: fit-mod-centre
+#| echo: false
+.mc <- grades |>
+  mutate(lecture_c = lecture - mean(lecture),
+         nclicks_c = nclicks - mean(nclicks)) |>
+  lm(grade ~ lecture_c + nclicks_c, data = _) |>
+  summary() |>
+  capture.output()
+
+.ix <- grep("^Coefficients:$", .mc)
+cat(.mc[.ix:(.ix + 4L)], sep = "\n")
+```
+
+- intercept is now an interpretable value
+  - it is the grade of the average student:  2.43.
+  - the other coefficients have not changed!
+- But which predictor is more important? Can't just look at coefficients as they are dependent on scale.
+
+## which predictor is more important? {.smaller}
+
+To compare $\beta$ weights, you need to standardize predictors
+
+- `lecture_z = (lecture - mean(lecture)) / sd(lecture)`
+- `nclicks_z = (nclicks - mean(nclicks)) / sd(nclicks)`
+  - z-score the predictors
+  - coefficient can be compared like correlation values in terms of strength and direction
+  - interpretation is change in Y for 1 SD change in X.
+  
+```{r}
+#| label: standardize
+#| echo: false
+
+.mod_std <- grades |>
+  mutate(lecture_z = (lecture - mean(lecture)) / sd(lecture),
+         nclicks_z = (nclicks - mean(nclicks)) / sd(nclicks)) |>
+  lm(grade ~ lecture_z + nclicks_z, data = _) |>
+  summary() |>
+  capture.output()
+
+.ix_std <- grep("^Coefficients:$", .mod_std)
+
+cat(.mod_std[.ix_std:(.ix_std+4L)], sep = "\n")
+```
+
+## 
+
+- [original (raw)]{style="color:yellow;"}
+
+  ```{r}
+  #| echo: false
+  cat(.cf_orig, sep = "\n")
+  ```
+
+- [mean-centered]{style="color:yellow;"}
+
+  ```{r}
+  #| echo: false
+  cat(.mc[.ix:(.ix + 4L)], sep = "\n")
+  ```
+
+- [standardized]{style="color:yellow;"}
+
+  ```{r}
+  #| echo: false
+  cat(.mod_std[.ix_std:(.ix_std+4L)], sep = "\n")
+  ```
+
+# model comparison
+
+## Comparison Question
+
+::: {.r-stack}
+Is engagement (as measured by lecture attendance and downloads) positively associated with final course grade *above and beyond* student ability (as measured by GPA)?
+:::
+
+* the effect of X "after controlling for" Z
+
+
+## model comparison strategy
+
+Compare "base" to "augmented" model with focal predictors
+
+- Base
+
+  $grade_i = \beta_0 + \beta_1 GPA_i + e_i$
+  
+- Augmented
+
+  $grade_i = \beta_0 + \beta_1 GPA_i + \beta_2 lecture_i + \beta_3 nclicks_i + e_i$
+
+$$H_0: \beta_2 = \beta_3 = 0$$
+
+$F$-test on residual sum of squares (RSS). If $p < \alpha$, reject $H_0$.
+
+## 
+
+- Base
+
+  $grade_i = \beta_0 + \beta_1 GPA_i + e_i$
+  
+- Augmented
+
+  $grade_i = \beta_0 + \beta_1 GPA_i + \beta_2 lecture_i + \beta_3 nclicks_i + e_i$
+
+```{r}
+#| echo: false
+base_model <- lm(grade ~ GPA, grades)
+big_model <- lm(grade ~ GPA + lecture + nclicks, grades)
+
+res <- anova(base_model, big_model) |>
+  broom::tidy() 
+
+res$mod <- c("base", "augmented")
+
+fstat <- res$statistic[2]
+pvalue <- res$p.value[2]
+
+res |>
+  select(model = mod, RSS = rss, df = df.residual) |>
+  knitr::kable(digits = 1)
+```
+
+* $F$(`{r} res$df[2]`, `{r} res$df.residual[2]`) = `{r} sprintf("%0.3f", fstat)`, $p$ = `{r} sprintf("%0.3f", pvalue)` - Augmented model is better because RSS is significantly smaller
+
+
+# categorical (nominal) predictors
+
+## dummy coding: two-level nominal
+
+- E.g. Left-Handed vs Right-Handed, Experimental vs Control
+- Create a variable and assign one level to 0; assign the other to 1.
+  - Control become 0, Experimental Group become 1
+- R will do this automatically if a predictor is of type "character" or "factor" instead of numeric
+  - baseline is which comes first in alphabet.
+  
+::: {.aside}
+[*NB: sign of the variable depends on the choice of baseline! E.g. Experimental = 0*]{style="color:yellow;"}
+:::
+
+## Parents as Intercept {.smaller}
+
+```{r}
+set.seed(1451)
+parents <- rnorm(n = 50, mean = 480, sd = 40)
+control <- rnorm(n = 50, mean = 500, sd = 40)
+
+dat <- tibble(group = rep(c("parent", "control"),
+             c(length(parents),length(control))),
+  rt = c(parents, control))
+
+mod_lm <- lm(rt ~ group, dat)
+summary(mod_lm)
+```
+
+## Control as Intercept {.smaller}
+
+```{r}
+set.seed(1451)
+parents <- rnorm(n = 50, mean = 480, sd = 40)
+control <- rnorm(n = 50, mean = 500, sd = 40)
+
+dat <- tibble(group = rep(c("0: parent", "1: control"),
+             c(length(parents),length(control))),
+  rt = c(parents, control))
+
+mod_lm <- lm(rt ~ group, dat)
+summary(mod_lm)
+```
+
+## factors with $k > 2$
+
+Arbitrarily choose one level as "baseline" level. Need $k - 1$ predictors, each contrasting a target level with baseline where for that predictor the target = 1 and everything else is 0.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+$k = 3$
+
+|       | `A2v1` | `A3v1` |
+|-------+--------+--------|
+| $A_1$ |      0 |      0 |
+| $A_2$ |      1 |      0 |
+| $A_3$ |      0 |      1 |
+:::
+
+::: {.column width="50%"}
+$k = 3$; Cat (baseline), Dog, Pig
+
+
+|       | `DogVsCat` | `PigVsCat` |
+|-------+--------+--------|
+| Cat |      0 |      0 | 
+| Dog |      1 |      0 | 
+| Pig |      0 |      1 |
+:::
+
+::::
+
+## factors with $k > 2$
+
+$k = 4$; Cat, Dog, Pig, Yak
+
+|       | `DogVCat` | `PigVCat` | `YakVCat` |
+|-------+--------+--------+--------|
+| Cat |      0 |      0 |      0 |
+| Dog |      1 |      0 |      0 |
+| Pig |      0 |      1 |      0 |
+| Yak |      0 |      0 |      1 |
+
+## Bodyweight over the seasons
+
+```{r}
+#| label: bodyweight-sim
+#| echo: false
+set.seed(1451)
+
+season_wt <- tibble(season = rep(c("winter", "spring", "summer", "fall"),
+                                 each = 5),
+                    bodyweight_kg = c(rnorm(5, 105, 3),
+                                      rnorm(5, 103, 3),
+                                      rnorm(5, 101, 3),
+                                      rnorm(5, 102.5, 3)))
+
+season_wt |>
+  head(6) |>
+  knitr::kable()
+```
+
+- four levels: winter, spring, summer, fall
+
+## Coding the predictors {.smaller}
+
+```{r}
+#| eval: false
+
+# the if_else() function
+# if "season == spring" put 1, otherwise 0
+# could also use a case_when()
+
+season_wt2 <- season_wt %>%
+  mutate(spring_v_winter = if_else(season == "spring", 1, 0),
+         summer_v_winter = if_else(season == "summer", 1, 0),
+         fall_v_winter = if_else(season == "fall", 1, 0))
+
+# the distinct() function
+# allows you to check the structure once set up
+# one baseline, and all other predictors set as either 1 or 0
+
+season_wt2 |>
+  distinct(season, spring_v_winter, summer_v_winter, fall_v_winter)
+
+```
+
+<br>
+```{r}
+#| echo: false
+## baseline value is 'winter'
+season_wt2 <- season_wt %>%
+  mutate(spring_v_winter = if_else(season == "spring", 1, 0),
+         summer_v_winter = if_else(season == "summer", 1, 0),
+         fall_v_winter = if_else(season == "fall", 1, 0))
+
+## ALWAYS double check using 'distinct'
+season_wt2 |>
+  distinct(season, spring_v_winter, summer_v_winter, fall_v_winter) |>
+  knitr::kable()
+```
+
+
+## Fitting the model
+
+$$BW_i = \beta_0 + \beta_1 SPvW + \beta_2 SUvW + \beta_3 FvW + e_i$$
+
+```{r, eval=FALSE}
+# model fitting all the predictors
+mod_lm <- lm(bodyweight_kg ~ spring_v_winter + summer_v_winter + fall_v_winter,
+             season_wt2)
+```
+
+
+```{r}
+#| echo: false
+bw_mod <- lm(bodyweight_kg ~ spring_v_winter +
+               
+               summer_v_winter + fall_v_winter,
+             season_wt2)
+
+.bw_mod <- bw_mod |>
+  summary() |>
+  capture.output()
+
+.ix <- grep("^Coefficients:$", .bw_mod)
+cat(.bw_mod[.ix:(.ix + 5L)], sep = "\n")
+```
+
+::: {.aside}
+* Intercept = body weight in winter
+* Coefficient is change from winter to that season
+
+:::
+
+## Main effect of season?
+
+Use model comparison.
+
+- Base:
+
+  $BW_i = \beta_0 + e_i$
+
+- Augmented: 
+
+  $BW_i = \beta_0 + \beta_1 SPvW + \beta_2 SUvW + \beta_3 FvW + e_i$
+
+$$H_0: \beta_1 = \beta_2 = \beta_3 = 0$$
+
+## 
+
+```{r}
+#| eval: false
+
+# model fitting just the intercept (~ 1)
+mod_base <- lm(bodyweight_kg ~ 1, season_wt2)
+# model fitting all the predictors
+mod_lm <- lm(bodyweight_kg ~ spring_v_winter +
+               summer_v_winter + fall_v_winter,
+             season_wt2)
+# model comparison using anova()
+anova(mod_base, mod_lm)
+```
+
+<br>
+```{r}
+#| echo: false
+mod_base <- lm(bodyweight_kg ~ 1, season_wt2)
+
+res <- anova(mod_base, bw_mod)  |>
+  broom::tidy()
+
+res$mod <- c("base", "augmented")
+
+fstat <- res$statistic[2]
+pvalue <- res$p.value[2]
+
+res |>
+  select(model = mod, RSS = rss, df = df.residual) |>
+  knitr::kable(digits = 1)
+```
+
+* $F$(`{r} res$df[2]`, `{r} res$df.residual[2]`) = `{r} sprintf("%0.3f", fstat)`, $p$ = `{r} sprintf("%0.3f", pvalue)`
+
+::: {.aside}
+
+[This is identical to a one-way ANOVA!]{style="color:yellow;"}
+
+:::
+
+## {.smaller}
+
+```{r}
+#| echo: true
+mod_lm <- lm(bodyweight_kg ~ spring_v_winter +
+               summer_v_winter + fall_v_winter,
+             season_wt2)
+summary(mod_lm)
+```
+
+* F-statistic: 0.2289 on 3 and 16 DF, p-value: 0.8749
+
+# Last but not least
+
+::: {.callout-caution}
+
+## Watch out for nominal variables disguised as numbers!
+
+Imagine you got a dataset with `season` coded as a single variable where: 1 = winter, 2 = spring, 3 = summer, 4 = fall. R will treat this as a single numeric predictor and the output will be nonsense.
+
+:::
+
+# Activities & Next Week
+
+Activities:
+
+* Formative Data Task on Moodle
+* Chapter 3 of the Book
+
+Next Week:
+
+* Interactions between variables
