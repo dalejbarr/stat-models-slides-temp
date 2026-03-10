@@ -19,7 +19,7 @@ knitr:
 #| label: setup
 #| include: false
 options(tidyverse.quiet=TRUE)
-source("../../theme_jetblack.R")
+source("../theme_jetblack.R")
 ```
 
 ## part II
